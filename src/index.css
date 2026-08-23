@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .glass-panel {
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  
+  .glass-card {
+    background: rgba(30, 41, 59, 0.40);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.8); }
+::-webkit-scrollbar-thumb { background: rgba(51, 65, 85, 0.8); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(71, 85, 105, 0.9); }
+
+/* ── Leaflet Dark Theme Overrides ──────────────────────────────── */
+.leaflet-container {
+  font-family: inherit;
+  background: #0f172a !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 0.625rem !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.6) !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  line-height: 1.4;
+}
+
+.leaflet-popup-tip {
+  background: #1e293b !important;
+}
+
+.leaflet-bar {
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+}
+
+.leaflet-bar a {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  width: 28px !important;
+  height: 28px !important;
+  line-height: 28px !important;
+  font-size: 16px !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(15, 23, 42, 0.7) !important;
+  color: rgba(148, 163, 184, 0.7) !important;
+  font-size: 9px !important;
+}
+
+.leaflet-control-attribution a {
+  color: rgba(96, 165, 250, 0.8) !important;
+}
+
+/* Remove Leaflet default icon border for custom icons */
+.custom-leaflet-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* ── Custom Animations ─────────────────────────────────────────── */
+@keyframes glowRed {
+  0%   { box-shadow: 0 0 4px rgba(239, 68, 68, 0.15), inset 0 0 4px rgba(239, 68, 68, 0.08); }
+  100% { box-shadow: 0 0 18px rgba(239, 68, 68, 0.55), inset 0 0 10px rgba(239, 68, 68, 0.25); }
+}
+
+.animate-glow-red {
+  animation: glowRed 1.8s ease-in-out infinite alternate;
+}
+
+/* Leaflet Popup close button dark */
+.leaflet-popup-close-button {
+  color: #94a3b8 !important;
+  font-size: 18px !important;
+  top: 6px !important;
+  right: 8px !important;
+}
+.leaflet-popup-close-button:hover {
+  color: #f1f5f9 !important;
+}
+
+/* AuthGateway animated scan-line */
+@keyframes scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
