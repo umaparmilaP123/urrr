@@ -8,7 +8,7 @@
     "dev:server": "node --watch server/index.js",
     "dev:all": "concurrently -n \"API,UI\" -c \"cyan,magenta\" \"npm run dev:server\" \"npm run dev\"",
     "seed": "node server/seed.js",
-    "build": "npm install && npx vite build",
+    "build": "npm install && node ./node_modules/vite/bin/vite.js build",
     "start": "node server/index.js",
     "preview": "vite preview"
   },
