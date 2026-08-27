@@ -58,7 +58,7 @@ app.use(session({
 
 // ── Routes ─────────────────────────────────────────────────────────────────
 app.use('/api/complaints',            complaintsRouter);
-app.use('/api/iot-sensors',        sensorsRouter);
+app.use('/api/iot-sensors',       sensorsRouter);
 app.use('/api/notifications',      notificationsRouter);
 app.use('/api/auth',                authRouter);
 app.use('/api/vision/analyze-hazard', visionRouter);
@@ -69,8 +69,11 @@ app.get('/api/health', (req, res) =>
 );
 
 // API 404 fallback (ensures missing /api/* routes return JSON instead of serving index.html)
-app.use('/api/*', (req, res) => {
-  res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` });
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` });
+  }
+  next();
 });
 
 // ── Frontend Static Serving ────────────────────────────────────────────────
