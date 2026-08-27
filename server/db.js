@@ -9,7 +9,7 @@
  *
  * Usage:
  *   const db = require('./db');
- *   await db.init();               // once at server startup
+ *   await db.init();                // once at server startup
  *   db.prepare('SELECT …').get()   // synchronous from here on
  */
 
@@ -47,7 +47,7 @@ class Statement {
   constructor(sqlDb, sql, compat) {
     this._sqlDb  = sqlDb;
     this._sql    = sql;
-    this._compat = compat;           // DbCompat — needed for _save / _txDepth
+    this._compat = compat;          // DbCompat — needed for _save / _txDepth
     this._stmt   = sqlDb.prepare(sql);
   }
 
@@ -156,7 +156,7 @@ class DbCompat {
         const result = fn(...args);
         this._txDepth--;
         this._sqlDb.run('COMMIT');
-        this._save();          // single disk write after commit
+        this._save();           // single disk write after commit
         return result;
       } catch (err) {
         this._txDepth--;
@@ -170,32 +170,32 @@ class DbCompat {
 // ── Schema DDL ──────────────────────────────────────────────────────────────
 const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS complaints (
-    id               TEXT PRIMARY KEY,
-    title            TEXT NOT NULL,
-    category         TEXT NOT NULL,
-    department       TEXT NOT NULL,
-    severity         TEXT NOT NULL,
-    water_level      REAL DEFAULT 0,
-    lat              REAL NOT NULL,
-    lon              REAL NOT NULL,
-    upvotes_count    INTEGER DEFAULT 1,
-    status           TEXT DEFAULT 'OPEN',
-    created_at       TEXT NOT NULL,
-    sla_mins         INTEGER NOT NULL,
-    escalation_level INTEGER DEFAULT 1,
-    description      TEXT NOT NULL,
-    reported_by      TEXT DEFAULT 'Citizen (Via Mobile App)',
-    dispatched_worker TEXT,
-    resolved_image   TEXT,
-    resolved_proof   TEXT,
-    updated_at       TEXT NOT NULL
+    id                 TEXT PRIMARY KEY,
+    title              TEXT NOT NULL,
+    category           TEXT NOT NULL,
+    department         TEXT NOT NULL,
+    severity           TEXT NOT NULL,
+    water_level        REAL DEFAULT 0,
+    lat                REAL NOT NULL,
+    lon                REAL NOT NULL,
+    upvotes_count      INTEGER DEFAULT 1,
+    status             TEXT DEFAULT 'OPEN',
+    created_at         TEXT NOT NULL,
+    sla_mins           INTEGER NOT NULL,
+    escalation_level   INTEGER DEFAULT 1,
+    description        TEXT NOT NULL,
+    reported_by        TEXT DEFAULT 'Citizen (Via Mobile App)',
+    dispatched_worker  TEXT,
+    resolved_image     TEXT,
+    resolved_proof     TEXT,
+    updated_at         TEXT NOT NULL
   );
 
   CREATE TABLE IF NOT EXISTS upvotes (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    complaint_id TEXT NOT NULL,
-    client_id    TEXT NOT NULL,
-    created_at   TEXT NOT NULL,
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    complaint_id   TEXT NOT NULL,
+    client_id      TEXT NOT NULL,
+    created_at     TEXT NOT NULL,
     UNIQUE(complaint_id, client_id)
   );
 
@@ -217,11 +217,11 @@ const SCHEMA_SQL = `
   );
 
   CREATE TABLE IF NOT EXISTS authorities (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    badge_id      TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    display_name  TEXT NOT NULL,
-    created_at    TEXT NOT NULL
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    badge_id        TEXT UNIQUE NOT NULL,
+    password_hash   TEXT NOT NULL,
+    display_name    TEXT NOT NULL,
+    created_at      TEXT NOT NULL
   );
 `;
 
@@ -242,9 +242,9 @@ class DbWrapper {
 
     const initSqlJs = require('sql.js');
 
-    // Provide explicit path to the WASM binary so sql.js doesn't try to fetch it
+    // Corrected path to point to root node_modules instead of server/node_modules
     const wasmBinary = fs.readFileSync(
-      path.join(__dirname, 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm')
+      path.join(__dirname, '../node_modules', 'sql.js', 'dist', 'sql-wasm.wasm')
     );
     const SQL = await initSqlJs({ wasmBinary });
 
