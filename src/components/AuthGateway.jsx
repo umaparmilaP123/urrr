@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShieldCheck, User, Lock, Smartphone, Radio, AlertTriangle, LogIn, ChevronRight, Zap, Copy, Eye, EyeOff } from 'lucide-react';
+import { ShieldCheck, User, Lock, Smartphone, Radio, AlertTriangle, LogIn, ChevronRight, Zap, Eye, EyeOff } from 'lucide-react';
 import { useUrbanGuard } from '../context/UrbanGuardContext';
 
-const AUTHORITY_ID = 'GHMC-ENG-2026';
-const AUTHORITY_PWD = 'admin';
+// AUTHORITY_PATTERN kept purely as a cosmetic UX hint — it no longer gates
+// access. The real security boundary is the server-side bcrypt check.
 const AUTHORITY_PATTERN = /^GHMC[-_]?/i;
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 export default function AuthGateway() {
   const { loginCitizen, loginAuthority } = useUrbanGuard();
@@ -18,54 +20,76 @@ export default function AuthGateway() {
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [copied, setCopied] = useState(null);
 
-  const handleCitizenSubmit = (e) => {
+  // ── Citizen login ────────────────────────────────────────────────────────
+  const handleCitizenSubmit = async (e) => {
     e?.preventDefault();
     setCitizenError('');
 
+    // Cosmetic hint — no longer a real security gate
     if (AUTHORITY_PATTERN.test(citizenContact.trim())) {
-      setCitizenError('⚠️ Authority credentials detected. Please switch to the Municipal Authority tab to log in.');
+      setCitizenError('⚠️ This looks like an authority ID. Switch to the Municipal Authority tab to log in.');
       return;
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      loginCitizen(citizenContact.trim() || 'Ward 14 Guest Resident');
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name: citizenContact.trim() || 'Ward 14 Guest Resident' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login failed');
+      loginCitizen(data.user.name);
+    } catch (err) {
+      setCitizenError(err.message);
+    } finally {
       setIsLoading(false);
-    }, 600);
+    }
   };
 
-  const handleGuestLogin = () => {
+  const handleGuestLogin = async () => {
     setCitizenError('');
     setIsLoading(true);
-    setTimeout(() => {
-      loginCitizen('Ward 14 Guest Resident');
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name: 'Ward 14 Guest Resident' }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login failed');
+      loginCitizen(data.user.name);
+    } catch (err) {
+      setCitizenError(err.message);
+    } finally {
       setIsLoading(false);
-    }, 400);
+    }
   };
 
-  const handleAuthoritySubmit = (e) => {
+  // ── Authority login ──────────────────────────────────────────────────────
+  const handleAuthoritySubmit = async (e) => {
     e.preventDefault();
     setAuthError('');
     setIsLoading(true);
-
-    setTimeout(() => {
-      if (deptId.trim() === AUTHORITY_ID && password === AUTHORITY_PWD) {
-        loginAuthority('GHMC Command Center');
-      } else {
-        setAuthError('Unauthorized Access: Invalid Municipal Credentials');
-      }
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/authority-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ badge_id: deptId.trim(), password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Authentication failed');
+      loginAuthority(data.user.name);
+    } catch (err) {
+      setAuthError(err.message);
+    } finally {
       setIsLoading(false);
-    }, 800);
-  };
-
-  const copyAndFill = (text, field) => {
-    navigator.clipboard?.writeText(text).catch(() => {});
-    setCopied(field);
-    if (field === 'id') setDeptId(AUTHORITY_ID);
-    if (field === 'pwd') setPassword(AUTHORITY_PWD);
-    setTimeout(() => setCopied(null), 1500);
+    }
   };
 
   const switchMode = (newMode) => {
@@ -273,7 +297,6 @@ export default function AuthGateway() {
                     Restricted to GHMC municipal officers. Unauthorized access attempts are logged and audited.
                   </p>
                 </div>
-
 
                 <form onSubmit={handleAuthoritySubmit} className="flex flex-col gap-3">
                   <div>

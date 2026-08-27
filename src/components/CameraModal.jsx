@@ -190,7 +190,8 @@ export default function CameraModal({ isOpen, onClose }) {
       const mock = generateMockResult();
       applyResult(mock);
       if (err.code === 'NO_KEY') {
-        setAiError('No API key found — showing simulated AI analysis. Add VITE_GEMINI_API_KEY to .env for live results.');
+        // Key is now server-side — point the user to server/.env
+        setAiError('Gemini API key not configured on server — showing simulated analysis. Add GEMINI_API_KEY to server/.env for live results.');
       } else {
         setAiError('API unavailable (' + (err.code || 'ERROR') + ') — showing simulated analysis. Fields are editable.');
       }
@@ -216,6 +217,10 @@ export default function CameraModal({ isOpen, onClose }) {
       base64 = canvas.toDataURL('image/jpeg');
       stopCamera();
     } else if (canvasRef.current) {
+      // Ensure the mock scene is freshly painted before we snapshot it —
+      // otherwise the canvas may still be blank/transparent, and
+      // toDataURL('image/jpeg') flattens transparent pixels to solid black.
+      generateCanvasMock();
       base64 = canvasRef.current.toDataURL('image/jpeg');
     }
     if (base64) {

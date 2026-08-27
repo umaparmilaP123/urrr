@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import L from 'leaflet';
 import { ThumbsUp, CheckCircle } from 'lucide-react';
@@ -169,10 +169,11 @@ export default function MapContainer({ complaints, focusedComplaint, viewMode })
       fadeAnimation: true,
     }).setView([17.4401, 78.3489], 14);
 
-    // Dark CartoDB tile layer
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    // Dark basemap — Esri World Dark Gray, free, no API key required.
+    // maxZoom capped at 16 (Esri's tile limit for this layer).
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 16,
+      attribution: '&copy; <a href="https://www.esri.com">Esri</a>, HERE, Garmin, FAO, NOAA, USGS',
     }).addTo(map);
 
     const markers = L.layerGroup().addTo(map);

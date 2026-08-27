@@ -1,0 +1,22 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Vite build output
+dist/
+
+# Environment files — never commit real secrets
+.env
+server/.env
+
+# SQLite database files — persisted locally, not in source control
+server/*.db
+server/*.db-shm
+server/*.db-wal
+
+# Session DB (connect-sqlite3 / memorystore not needed but kept for safety)
+sessions.db
