@@ -79,8 +79,8 @@ app.use((req, res, next) => {
 // ── Frontend Static Serving ────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '../dist')));
 
-// SPA client-side routing fallback
-app.get('/*', (req, res) => {
+// SPA client-side routing fallback (middleware format avoids path-to-regexp errors)
+app.use((req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
