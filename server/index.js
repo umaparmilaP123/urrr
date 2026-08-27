@@ -20,7 +20,7 @@ const visionRouter        = require('./routes/vision');
 const { startSlaCron }    = require('./sla');
 
 const app  = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 // ── CORS ───────────────────────────────────────────────────────────────────
 // Allow the Vite dev server; credentials: true is required so the browser
@@ -57,9 +57,9 @@ app.use(session({
 
 // ── Routes ─────────────────────────────────────────────────────────────────
 app.use('/api/complaints',            complaintsRouter);
-app.use('/api/iot-sensors',           sensorsRouter);
-app.use('/api/notifications',         notificationsRouter);
-app.use('/api/auth',                  authRouter);
+app.use('/api/iot-sensors',         sensorsRouter);
+app.use('/api/notifications',       notificationsRouter);
+app.use('/api/auth',                authRouter);
 app.use('/api/vision/analyze-hazard', visionRouter);
 
 // Health check
@@ -85,12 +85,7 @@ async function start() {
   await db.init();
 
   app.listen(PORT, () => {
-    console.log(`\n🛡  UrbanGuard API  →  http://localhost:${PORT}`);
-    console.log(`   GET  /api/complaints`);
-    console.log(`   GET  /api/iot-sensors`);
-    console.log(`   GET  /api/notifications`);
-    console.log(`   POST /api/auth/authority-login`);
-    console.log(`   POST /api/vision/analyze-hazard\n`);
+    console.log(`Server running on port ${PORT}`);
     startSlaCron();
   });
 }
