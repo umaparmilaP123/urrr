@@ -66,6 +66,23 @@ async function apiFetch(path, options = {}) {
   return res;
 }
 
+/**
+ * Safely parse a fetch Response as JSON.
+ * Throws a clear error instead of an opaque SyntaxError when the server
+ * returns an HTML page (e.g. Vercel 404 catch-all instead of the API).
+ */
+async function safeJson(res) {
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) {
+    const text = await res.text();
+    throw new Error(
+      `Server returned non-JSON response (${res.status}): ${text.slice(0, 200)}`
+    );
+  }
+  return res.json();
+}
+
+
 // ── Provider ───────────────────────────────────────────────────────────────
 export const UrbanGuardProvider = ({ children }) => {
   const [currentUser, setCurrentUser]         = useState(null);
@@ -88,7 +105,7 @@ export const UrbanGuardProvider = ({ children }) => {
   // Checks GET /api/auth/me so a page-refresh doesn't force re-login.
   useEffect(() => {
     apiFetch('/api/auth/me')
-      .then(r => r.json())
+      .then(r => safeJson(r))
       .then(data => {
         if (data.user) setCurrentUser(data.user);
       })
@@ -110,7 +127,7 @@ export const UrbanGuardProvider = ({ children }) => {
   const fetchComplaints = useCallback(async () => {
     try {
       const res  = await apiFetch('/api/complaints');
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) return;
 
       setComplaints(prev => {
@@ -137,7 +154,7 @@ export const UrbanGuardProvider = ({ children }) => {
   const fetchSensors = useCallback(async () => {
     try {
       const res  = await apiFetch('/api/iot-sensors');
-      const data = await res.json();
+      const data = await safeJson(res);
       if (res.ok) setIotSensors(data);
     } catch { /* ignore */ }
   }, []);
@@ -145,7 +162,7 @@ export const UrbanGuardProvider = ({ children }) => {
   const fetchNotifications = useCallback(async () => {
     try {
       const res  = await apiFetch('/api/notifications?limit=50');
-      const data = await res.json();
+      const data = await safeJson(res);
       if (res.ok) setNotificationLogs(data.notifications || []);
     } catch { /* ignore */ }
   }, []);
@@ -184,7 +201,7 @@ export const UrbanGuardProvider = ({ children }) => {
           reportedBy:  newReport.reportedBy || 'Citizen (Via Mobile App)',
         }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) {
         showToast(`Error: ${data.error}`, 'warning');
         return;
@@ -209,7 +226,7 @@ export const UrbanGuardProvider = ({ children }) => {
   const upvoteComplaint = useCallback(async (id) => {
     try {
       const res  = await apiFetch(`/api/complaints/${id}/upvote`, { method: 'POST' });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (res.status === 409) {
         showToast('You have already upvoted this complaint.', 'warning');
         return;
@@ -235,7 +252,7 @@ export const UrbanGuardProvider = ({ children }) => {
         method: 'POST',
         body: JSON.stringify({ workerName }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) { showToast(`Error: ${data.error}`, 'warning'); return; }
       showToast(`👷 ${workerName} dispatched to Incident #${id}.`, 'success');
       setComplaints(prev => prev.map(c => c.id === id ? data : c));
@@ -249,7 +266,7 @@ export const UrbanGuardProvider = ({ children }) => {
   const escalateComplaint = useCallback(async (id) => {
     try {
       const res  = await apiFetch(`/api/complaints/${id}/escalate`, { method: 'POST' });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) { showToast(`Error: ${data.error}`, 'warning'); return; }
       const names = ['', 'L1 Field Op', 'L2 Supervisor', 'L3 Dept Chief Breach'];
       showToast(`⚠️ Incident #${id} escalated to ${names[data.escalationLevel]}`, 'warning');
@@ -270,7 +287,7 @@ export const UrbanGuardProvider = ({ children }) => {
           proofNote:  proofData.proofNote  || 'Resolved and cleared.',
         }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) { showToast(`Error: ${data.error}`, 'warning'); return; }
       showToast(`✅ Incident #${id} marked as RESOLVED.`, 'success');
       setComplaints(prev => prev.map(c => c.id === id ? data : c));

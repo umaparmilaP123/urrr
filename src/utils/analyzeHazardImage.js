@@ -47,8 +47,18 @@ export async function analyzeHazardImage(imageBase64) {
 
   let body;
   try {
+    const ct = response.headers.get('content-type') || '';
+    if (!ct.includes('application/json')) {
+      const text = await response.text();
+      const err = new Error(
+        `Vision API returned non-JSON (${response.status}): ${text.slice(0, 200)}`
+      );
+      err.code = 'API_ERROR';
+      throw err;
+    }
     body = await response.json();
-  } catch {
+  } catch (e) {
+    if (e.code) throw e; // re-throw our own structured errors
     const err = new Error('Failed to parse vision API response.');
     err.code = 'PARSE_ERROR';
     throw err;
