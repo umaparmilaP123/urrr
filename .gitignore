@@ -20,3 +20,5 @@ server/*.db-wal
 
 # Session DB (connect-sqlite3 / memorystore not needed but kept for safety)
 sessions.db
+
+.vercel

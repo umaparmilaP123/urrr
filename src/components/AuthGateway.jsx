@@ -9,6 +9,23 @@ const AUTHORITY_PATTERN = /^GHMC[-_]?/i;
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
+/**
+ * Safely parse a fetch Response as JSON.
+ * If the server returns HTML (e.g. Vercel 404 page), this throws a clear
+ * error instead of an opaque SyntaxError.
+ */
+async function safeJson(res) {
+  const ct = res.headers.get('content-type') || '';
+  if (!ct.includes('application/json')) {
+    const text = await res.text();
+    throw new Error(
+      `Server returned non-JSON response (${res.status}): ${text.slice(0, 200)}`
+    );
+  }
+  return res.json();
+}
+
+
 export default function AuthGateway() {
   const { loginCitizen, loginAuthority } = useUrbanGuard();
 
@@ -40,7 +57,7 @@ export default function AuthGateway() {
         credentials: 'include',
         body: JSON.stringify({ name: citizenContact.trim() || 'Ward 14 Guest Resident' }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || 'Login failed');
       loginCitizen(data.user.name);
     } catch (err) {
@@ -60,7 +77,7 @@ export default function AuthGateway() {
         credentials: 'include',
         body: JSON.stringify({ name: 'Ward 14 Guest Resident' }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || 'Login failed');
       loginCitizen(data.user.name);
     } catch (err) {
@@ -82,7 +99,7 @@ export default function AuthGateway() {
         credentials: 'include',
         body: JSON.stringify({ badge_id: deptId.trim(), password }),
       });
-      const data = await res.json();
+      const data = await safeJson(res);
       if (!res.ok) throw new Error(data.error || 'Authentication failed');
       loginAuthority(data.user.name);
     } catch (err) {

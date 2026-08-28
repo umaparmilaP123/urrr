@@ -1,33 +1,27 @@
 'use strict';
 /**
- * seed.js — idempotent seed script
- * Run with: node seed.js  (from the server/ directory)
+ * seed.js
  *
- * Seeds only if the complaints table is empty, so restarting the dev server
- * never wipes real data created during testing.
+ * Exports seedIfEmpty() — idempotent, called by index.js on every cold start.
+ * Also runnable as a standalone script: node seed.js
  */
 
-require('dotenv').config();
 const bcrypt = require('bcryptjs');
 const db = require('./db');
 
 const NOW = Date.now();
 function iso(msAgo) { return new Date(NOW - msAgo).toISOString(); }
 
-async function main() {
-  console.log('🌱 Initializing database…');
-  await db.init();
-
-  // ── Already seeded? ──────────────────────────────────────────────────────
+async function seedIfEmpty() {
   const existing = db.prepare('SELECT COUNT(*) AS n FROM complaints').get();
-  if (existing.n > 0) {
-    console.log('✅ Database already seeded — skipping (complaints table is not empty).');
+  if (existing && existing.n > 0) {
+    console.log('  ✅ DB already seeded — skipping.');
     return;
   }
 
-  console.log('   Inserting seed data…');
+  console.log('  🌱 Seeding database…');
 
-  // ── Complaints ────────────────────────────────────────────────────────────
+  // ── Complaints ───────────────────────────────────────────────────────────
   const insertComplaint = db.prepare(`
     INSERT OR IGNORE INTO complaints
       (id, title, category, department, severity, water_level, lat, lon,
@@ -86,48 +80,61 @@ async function main() {
     for (const c of complaints) insertComplaint.run(c);
   });
   seedComplaints();
-  console.log(`  ✔ Inserted ${complaints.length} complaints`);
+  console.log(`  ✔ ${complaints.length} complaints`);
 
-  // ── IoT Sensors ───────────────────────────────────────────────────────────
+  // ── IoT Sensors ──────────────────────────────────────────────────────────
   const insertSensor = db.prepare(`
     INSERT OR IGNORE INTO iot_sensors (id, name, capacity, status, lat, lon, updated_at)
     VALUES (@id, @name, @capacity, @status, @lat, @lon, @updated_at)
   `);
 
   const sensors = [
-    { id: 'S1', name: 'Sector 4 Underpass Drain',       capacity: 88, status: 'CRITICAL', lat: 17.4420, lon: 78.3705 },
-    { id: 'S2', name: 'Cyber Towers Drainage Terminal',  capacity: 65, status: 'WARNING',  lat: 17.4445, lon: 78.3765 },
-    { id: 'S3', name: 'Mindspace Road Main Trunk',       capacity: 42, status: 'NORMAL',   lat: 17.4395, lon: 78.3820 },
-    { id: 'S4', name: 'Bio-Diversity Junction Intake',   capacity: 55, status: 'NORMAL',   lat: 17.4315, lon: 78.3725 },
+    { id: 'S1', name: 'Sector 4 Underpass Drain',      capacity: 88, status: 'CRITICAL', lat: 17.4420, lon: 78.3705 },
+    { id: 'S2', name: 'Cyber Towers Drainage Terminal', capacity: 65, status: 'WARNING',  lat: 17.4445, lon: 78.3765 },
+    { id: 'S3', name: 'Mindspace Road Main Trunk',      capacity: 42, status: 'NORMAL',   lat: 17.4395, lon: 78.3820 },
+    { id: 'S4', name: 'Bio-Diversity Junction Intake',  capacity: 55, status: 'NORMAL',   lat: 17.4315, lon: 78.3725 },
   ];
 
   const seedSensors = db.transaction(() => {
-    for (const s of sensors) {
+    for (const s of sensors)
       insertSensor.run({ ...s, updated_at: new Date().toISOString() });
-    }
   });
   seedSensors();
-  console.log(`  ✔ Inserted ${sensors.length} IoT sensors`);
+  console.log(`  ✔ ${sensors.length} IoT sensors`);
 
   // ── Authority ─────────────────────────────────────────────────────────────
-  const existingAuth = db.prepare("SELECT COUNT(*) AS n FROM authorities WHERE badge_id = 'GHMC-ENG-2026'").get();
-  if (existingAuth.n === 0) {
+  const existingAuth = db
+    .prepare("SELECT COUNT(*) AS n FROM authorities WHERE badge_id = 'GHMC-ENG-2026'")
+    .get();
+  if (!existingAuth || existingAuth.n === 0) {
     const hash = bcrypt.hashSync('admin', 12);
     db.prepare(`
       INSERT INTO authorities (badge_id, password_hash, display_name, created_at)
       VALUES (?, ?, ?, ?)
     `).run('GHMC-ENG-2026', hash, 'GHMC Command Center', new Date().toISOString());
-    console.log('  ✔ Inserted authority: GHMC-ENG-2026 (password: admin — bcrypt-hashed)');
-  } else {
-    console.log('  ⚠  Authority GHMC-ENG-2026 already exists — skipped');
+    console.log('  ✔ Authority GHMC-ENG-2026 (password: admin)');
   }
 
-  // ── Initial notification ──────────────────────────────────────────────────
+  // ── Notification ──────────────────────────────────────────────────────────
   db.prepare(`
     INSERT INTO notification_logs (type, message, created_at) VALUES (?, ?, ?)
-  `).run('system', 'UrbanGuard Civic Response System initialized. Connected to Ward 14 (Cyberabad).', new Date().toISOString());
+  `).run(
+    'system',
+    'UrbanGuard Civic Response System initialized. Connected to Ward 14 (Cyberabad).',
+    new Date().toISOString()
+  );
 
-  console.log('\n✅ Seed complete!');
+  console.log('  ✅ Seed complete.');
 }
 
-main().catch(err => { console.error('Seed failed:', err); process.exit(1); });
+module.exports = { seedIfEmpty };
+
+// ── Standalone script: node seed.js ──────────────────────────────────────
+if (require.main === module) {
+  require('dotenv').config();
+  (async () => {
+    console.log('🌱 Initializing database…');
+    await db.init();
+    await seedIfEmpty();
+  })().catch(err => { console.error('Seed failed:', err); process.exit(1); });
+}
