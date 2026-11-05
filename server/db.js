@@ -2,21 +2,24 @@
 /**
  * db.js — sql.js WASM SQLite with better-sqlite3-compatible synchronous API.
  *
- * Production (Vercel):  loads WASM from CDN; DB file lives in /tmp (writable).
- * Development:          reads WASM from local node_modules; DB file in server/.
+ * Production (Vercel / NODE_ENV=production):
+ *   • Loads WASM from cdnjs CDN (no local binary bundling needed).
+ *   • Runs a PURE IN-MEMORY database — zero file I/O.
+ *
+ * Development (local):
+ *   • Loads WASM from local node_modules (no network needed).
+ *   • Persists DB to server/urbanguard.db so data survives server restarts.
  */
 
 const fs   = require('fs');
 const path = require('path');
 
-const IS_PROD = process.env.NODE_ENV === 'production';
-
-// /tmp is the only writable path on Vercel's Lambda filesystem.
-const DB_PATH = IS_PROD
+const IS_PROD   = !!(process.env.VERCEL || process.env.NODE_ENV === 'production');
+const DB_PATH   = IS_PROD
   ? '/tmp/urbanguard.db'
   : path.join(__dirname, 'urbanguard.db');
 
-// ── Named-param conversion ─────────────────────────────────────────────────
+// ── Named-param conversion ──────────────────────────────────────────────────
 function convertParams(params) {
   if (params === undefined || params === null) return undefined;
   if (Array.isArray(params)) return params.map(v => (v === undefined ? null : v));
@@ -31,7 +34,7 @@ function convertParams(params) {
   return [params === undefined ? null : params];
 }
 
-// ── Statement ──────────────────────────────────────────────────────────────
+// ── Statement ───────────────────────────────────────────────────────────────
 class Statement {
   constructor(sqlDb, sql, compat) {
     this._sqlDb  = sqlDb;
@@ -75,21 +78,21 @@ class Statement {
   }
 }
 
-// ── DbCompat ───────────────────────────────────────────────────────────────
+// ── DbCompat ────────────────────────────────────────────────────────────────
 class DbCompat {
   constructor(sqlDb, dbPath) {
     this._sqlDb   = sqlDb;
-    this._dbPath  = dbPath;
+    this._dbPath  = dbPath;   // null → no file I/O (production)
     this._txDepth = 0;
   }
 
   _save() {
+    if (this._dbPath === null) return;   // production: skip
     if (this._txDepth > 0) return;
     try {
       const data = this._sqlDb.export();
       fs.writeFileSync(this._dbPath, Buffer.from(data));
     } catch (e) {
-      // On Vercel /tmp writes can occasionally fail — log and continue
       console.warn('[db] _save failed:', e.message);
     }
   }
@@ -117,7 +120,7 @@ class DbCompat {
   }
 }
 
-// ── Schema ─────────────────────────────────────────────────────────────────
+// ── Schema ──────────────────────────────────────────────────────────────────
 const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS complaints (
     id               TEXT PRIMARY KEY,
@@ -171,7 +174,7 @@ const SCHEMA_SQL = `
   );
 `;
 
-// ── DbWrapper — public singleton ───────────────────────────────────────────
+// ── DbWrapper — public singleton ────────────────────────────────────────────
 class DbWrapper {
   constructor() { this._compat = null; }
 
@@ -182,30 +185,31 @@ class DbWrapper {
     let SQL;
 
     if (IS_PROD) {
-      // In serverless (Vercel), load WASM from cdnjs to avoid bundle issues.
-      // The sql.js 1.x WASM API is stable; patch versions are wire-compatible.
       SQL = await initSqlJs({
         locateFile: file =>
           `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.12.0/${file}`,
       });
+      const sqlDb = new SQL.Database();
+      console.log('  🧠 Production: pure in-memory SQLite');
+      this._compat = new DbCompat(sqlDb, null);
     } else {
       const wasmBinary = fs.readFileSync(
         path.join(__dirname, 'node_modules', 'sql.js', 'dist', 'sql-wasm.wasm')
       );
       SQL = await initSqlJs({ wasmBinary });
+
+      let sqlDb;
+      if (fs.existsSync(DB_PATH)) {
+        const buf = fs.readFileSync(DB_PATH);
+        sqlDb = new SQL.Database(buf);
+        console.log(`  📂 Dev: loaded existing DB from ${DB_PATH}`);
+      } else {
+        sqlDb = new SQL.Database();
+        console.log(`  🆕 Dev: created new DB at ${DB_PATH}`);
+      }
+      this._compat = new DbCompat(sqlDb, DB_PATH);
     }
 
-    let sqlDb;
-    if (fs.existsSync(DB_PATH)) {
-      const buf = fs.readFileSync(DB_PATH);
-      sqlDb = new SQL.Database(buf);
-      console.log(`  📂 Loaded DB: ${DB_PATH}`);
-    } else {
-      sqlDb = new SQL.Database();
-      console.log(`  🆕 Created DB: ${DB_PATH}`);
-    }
-
-    this._compat = new DbCompat(sqlDb, DB_PATH);
     this._compat.exec(SCHEMA_SQL);
     return this;
   }

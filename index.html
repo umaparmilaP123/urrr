@@ -1,15 +1,544 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>UrbanGuard — Monsoon Civic Response System</title>
-    <!-- Leaflet CSS CDN -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-  </head>
-  <body class="bg-[#0f172a] text-slate-100 min-h-screen">
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="en" data-lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AwaazSafe — Anonymous campus ragging and harassment reporting for Visakhapatnam students." />
+  <title>AwaazSafe — Report Safely, Anonymously</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════
+       TOP NAVIGATION
+  ════════════════════════════════════════════════ -->
+  <header class="top-nav" role="banner">
+    <div class="nav-inner">
+      <a href="#home" class="nav-logo" aria-label="AwaazSafe Home">
+        <span class="logo-shield" aria-hidden="true">🛡️</span>
+        <span class="logo-text">Awaaz<strong>Safe</strong></span>
+      </a>
+
+      <nav class="nav-links" role="navigation" aria-label="Main navigation">
+        <a href="#home"       class="nav-link active" data-page="home"       data-i18n="nav_home">Home</a>
+        <a href="#transcript" class="nav-link"         data-page="transcript" data-i18n="nav_transcript">Report</a>
+        <a href="#receipt"    class="nav-link"         data-page="receipt"    data-i18n="nav_vault">Vault</a>
+        <a href="#about"      class="nav-link"         data-page="about"      data-i18n="nav_about">About</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="lang-toggle" id="langToggle" aria-label="Switch language between English and Telugu">
+          <span id="langLabel">తెలుగు</span>
+        </button>
+        <button class="quick-exit" id="quickExit" aria-label="Quick exit — navigate away immediately" title="Quick Exit">
+          ✕ Exit
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════
+       MAIN CONTENT AREA
+  ════════════════════════════════════════════════ -->
+  <main id="app-root" role="main">
+
+    <!-- ──────────────────────────────────────────
+         PAGE 1: HOME / VOICE REPORTER
+    ─────────────────────────────────────────── -->
+    <section id="page-home" class="page active" aria-label="Home — Voice Reporter">
+
+      <div class="hero">
+        <div class="hero-badge" role="note" aria-label="Zero-knowledge anonymity guarantee">
+          <span class="badge-dot"></span>
+          <span data-i18n="badge_text">Zero-Knowledge Anonymous • No Login Required</span>
+        </div>
+        <h1 class="hero-headline" data-i18n="hero_headline">
+          Report campus ragging and harassment in your own voice—100% anonymous, direct to external authorities.
+        </h1>
+        <p class="hero-sub" data-i18n="hero_sub">
+          AwaazSafe bypasses biased college gatekeepers to route complaints straight to external authorities. Speak. Submit. Stay safe.
+        </p>
+      </div>
+
+      <div class="stat-cards" role="region" aria-label="Impact statistics">
+        <div class="stat-card">
+          <span class="stat-num">1.01L+</span>
+          <span class="stat-label" data-i18n="stat1">Cybercrime cases in India (NCRB 2024)</span>
+        </div>
+        <div class="stat-card stat-card--amber">
+          <span class="stat-num">45,519</span>
+          <span class="stat-label" data-i18n="stat2">SOS requests in Vizag alone</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num">↑ #1</span>
+          <span class="stat-label" data-i18n="stat3">Cyber threats fastest-growing crime category</span>
+        </div>
+      </div>
+
+      <div class="mic-section" role="region" aria-label="Voice recorder">
+        <p class="mic-instructions" data-i18n="mic_instruction">
+          Press the mic, speak your incident in <strong>Telugu or English</strong>, then get your secure tracking key.
+        </p>
+
+        <div class="lang-selector" role="group" aria-label="Recording language">
+          <button class="lang-btn active" id="langEn" data-lang-rec="en-IN" aria-pressed="true">English</button>
+          <button class="lang-btn" id="langTe" data-lang-rec="te-IN" aria-pressed="false">తెలుగు</button>
+        </div>
+
+        <button class="mic-btn" id="micBtn" aria-label="Start voice recording" aria-live="polite">
+          <span class="mic-icon" aria-hidden="true">🎙️</span>
+          <span class="mic-btn-label" id="micBtnLabel" data-i18n="mic_start">Tap to Speak</span>
+          <span class="mic-pulse" id="micPulse" aria-hidden="true"></span>
+        </button>
+
+        <div class="live-transcript" id="liveTranscript" role="status" aria-live="polite" aria-label="Live transcript">
+          <p class="live-transcript-placeholder" id="transcriptPlaceholder" data-i18n="transcript_placeholder">
+            Your words will appear here as you speak…
+          </p>
+          <p class="live-transcript-text" id="transcriptText"></p>
+        </div>
+
+        <div class="error-banner" id="micError" hidden role="alert">
+          <span class="error-icon" aria-hidden="true">⚠️</span>
+          <span id="micErrorMsg"></span>
+          <button class="btn-retry" onclick="resetMic()" data-i18n="btn_retry">Try Again</button>
+        </div>
+
+        <!-- Voice recording SHA-256 hash — shown after recording stops -->
+        <div class="voice-hash-panel" id="voiceHashPanel" hidden aria-live="polite" aria-label="Voice recording integrity hash">
+          <div class="voice-hash-label">🔐 Voice Recording Hash (SHA-256)</div>
+          <div class="voice-hash-value" id="voiceHashValue">Computing…</div>
+          <div class="voice-hash-status" id="voiceHashStatus">
+            <span aria-hidden="true">⏳</span> Generating tamper-evident fingerprint…
+          </div>
+        </div>
+
+        <button class="btn-primary" id="submitTranscript" disabled data-i18n="btn_analyse">
+          Analyse with AI →
+        </button>
+      </div>
+
+      <div class="guarantee-strip" role="note">
+        <div class="guarantee-item">
+          <span aria-hidden="true">🔒</span>
+          <span data-i18n="guarantee1">No name, no ID collected</span>
+        </div>
+        <div class="guarantee-item">
+          <span aria-hidden="true">🌐</span>
+          <span data-i18n="guarantee2">Routed to external authorities only</span>
+        </div>
+        <div class="guarantee-item">
+          <span aria-hidden="true">🗑️</span>
+          <span data-i18n="guarantee3">Zero server storage</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────────────────────
+         PAGE 2: TRANSCRIPT & PREVIEW
+    ─────────────────────────────────────────── -->
+    <section id="page-transcript" class="page" aria-label="Transcript and AI Preview">
+
+      <div class="page-header">
+        <h2 data-i18n="transcript_title">Review Your Report</h2>
+        <p class="page-sub" data-i18n="transcript_sub">Your words, structured into a legal complaint. All identity markers can be removed.</p>
+      </div>
+
+      <div class="transcript-grid">
+
+        <div class="transcript-panel card">
+          <div class="panel-header">
+            <h3 data-i18n="raw_title">Your Words</h3>
+            <span class="panel-badge" data-i18n="raw_badge">Raw Transcript</span>
+          </div>
+          <div class="transcript-raw" id="transcriptRaw" role="region" aria-label="Raw transcript text">
+            <p class="empty-state" data-i18n="raw_empty">No transcript yet. Go back and record your incident.</p>
+          </div>
+
+          <div class="redaction-section">
+            <h4 data-i18n="redact_title">Identity Redaction</h4>
+            <label class="toggle-label" for="redactName">
+              <span data-i18n="redact_name">Remove my name if mentioned</span>
+              <input type="checkbox" id="redactName" class="toggle-input" checked aria-label="Remove name from transcript" />
+              <span class="toggle-track" aria-hidden="true"></span>
+            </label>
+            <label class="toggle-label" for="redactPhone">
+              <span data-i18n="redact_phone">Remove phone/ID numbers</span>
+              <input type="checkbox" id="redactPhone" class="toggle-input" checked aria-label="Remove phone numbers from transcript" />
+              <span class="toggle-track" aria-hidden="true"></span>
+            </label>
+            <label class="toggle-label" for="redactDept">
+              <span data-i18n="redact_dept">Generalize department/batch</span>
+              <input type="checkbox" id="redactDept" class="toggle-input" />
+              <span class="toggle-track" aria-hidden="true"></span>
+            </label>
+          </div>
+
+          <div class="evidence-section">
+            <h4 data-i18n="evidence_title">Attach Evidence <span class="optional-badge">Optional</span></h4>
+            <label class="file-upload-label" for="evidenceFiles" aria-label="Attach screenshot or photo evidence">
+              <span aria-hidden="true">📎</span>
+              <span data-i18n="evidence_btn">Screenshots or Photos</span>
+              <span class="file-hint" data-i18n="evidence_hint">Max 3 files, 5 MB each</span>
+            </label>
+            <input type="file" id="evidenceFiles" class="file-input" accept="image/*,.pdf" multiple aria-label="Upload evidence files" />
+            <div class="evidence-preview" id="evidencePreview"></div>
+
+            <!-- Security results per file: hash, stripped EXIF fields, C2PA badge -->
+            <div class="evidence-security-list" id="evidenceSecurityList"
+                 role="region" aria-label="Evidence security analysis" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <div class="ai-panel card">
+          <div class="panel-header">
+            <h3 data-i18n="ai_title">AI Legal Summary</h3>
+            <span class="panel-badge panel-badge--teal" data-i18n="ai_badge">Powered by Gemini</span>
+          </div>
+
+          <div class="ai-loading" id="aiLoading" hidden aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <p data-i18n="ai_loading">Analysing your narrative…</p>
+          </div>
+
+          <div class="error-banner" id="aiError" hidden role="alert">
+            <span class="error-icon" aria-hidden="true">⚠️</span>
+            <span id="aiErrorMsg" data-i18n="ai_error">AI analysis failed. Please try again.</span>
+            <button class="btn-retry" id="aiRetry" data-i18n="btn_retry">Try Again</button>
+          </div>
+
+          <div class="ai-output" id="aiOutput" role="region" aria-label="AI structured complaint">
+            <p class="empty-state" data-i18n="ai_empty">AI analysis will appear here after recording.</p>
+          </div>
+
+          <div class="api-key-section" id="apiKeySection">
+            <label for="geminiKey" class="api-key-label" data-i18n="api_key_label">
+              🔑 Gemini API Key <span class="optional-badge">stored locally only</span>
+            </label>
+            <div class="api-key-row">
+              <input type="password" id="geminiKey" class="api-key-input" placeholder="AIza..." aria-label="Enter your Gemini API key" autocomplete="off" />
+              <button class="btn-sm" id="saveKeyBtn" data-i18n="btn_save_key">Save</button>
+            </div>
+            <p class="api-key-hint" data-i18n="api_key_hint">Key is saved to your browser only. Never sent anywhere except Google's API.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn-secondary" onclick="goTo('home')" data-i18n="btn_re_record">← Re-record</button>
+        <button class="btn-primary" id="submitReport" data-i18n="btn_submit_report">Submit Report →</button>
+      </div>
+
+      <div class="error-banner" id="submitError" hidden role="alert">
+        <span class="error-icon" aria-hidden="true">⚠️</span>
+        <span id="submitErrorMsg"></span>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────────────────────
+         PAGE 3: RECEIPT & CASE VAULT
+    ─────────────────────────────────────────── -->
+    <section id="page-receipt" class="page" aria-label="Receipt and Case Vault">
+
+      <div class="page-header">
+        <h2 data-i18n="receipt_title">Your Case is Logged</h2>
+        <p class="page-sub" data-i18n="receipt_sub">Keep your case recovery key safe. It's the only way to track your report.</p>
+      </div>
+
+      <div class="case-key-card card" id="caseKeyCard" hidden>
+        <div class="case-key-header">
+          <span aria-hidden="true">🔑</span>
+          <h3 data-i18n="key_title">Case Recovery Key</h3>
+        </div>
+        <div class="case-key-display" id="caseKeyDisplay" role="text" aria-label="Case recovery key" aria-live="polite">
+          ——————————————
+        </div>
+        <button class="btn-copy" id="copyKeyBtn" aria-label="Copy case recovery key to clipboard" data-i18n="btn_copy_key">
+          📋 Copy Key
+        </button>
+        <p class="key-warning" data-i18n="key_warning">
+          ⚠️ This key is not stored anywhere on our servers. Write it down or screenshot it.
+        </p>
+
+        <!-- Tamper-evident hash receipts for voice + evidence files -->
+        <div class="receipt-hashes" id="receiptHashes" hidden
+             role="region" aria-label="Tamper-evident file hashes"></div>
+
+        <div class="authority-card" id="authorityCard">
+          <div class="authority-header">
+            <span class="authority-dot" aria-hidden="true"></span>
+            <span data-i18n="authority_label">Routed to External Authority</span>
+          </div>
+          <div class="authority-name" id="authorityName">—</div>
+          <div class="authority-status">
+            <span class="status-badge" data-i18n="status_received">Complaint Received</span>
+            <span class="status-time" id="submissionTime">—</span>
+          </div>
+        </div>
+
+        <div class="tracker-section">
+          <span data-i18n="tracker_label">🔒 Encrypted Status Tracker:</span>
+          <a class="tracker-link" id="trackerLink" href="#receipt" aria-label="View encrypted status tracker">
+            #awaaz/track/[key]
+          </a>
+        </div>
+      </div>
+
+      <div class="stats-strip" role="region" aria-label="Platform statistics">
+        <div class="stats-strip-item">
+          <span class="stats-num" id="statWeekly">—</span>
+          <span class="stats-label" data-i18n="stat_weekly">Weekly reports submitted</span>
+        </div>
+        <div class="stats-strip-item">
+          <span class="stats-num" id="statVoice">—</span>
+          <span class="stats-label" data-i18n="stat_voice">Voice transcription success</span>
+        </div>
+        <div class="stats-strip-item">
+          <span class="stats-num" id="statAck">—</span>
+          <span class="stats-label" data-i18n="stat_ack">Authority acknowledgement</span>
+        </div>
+      </div>
+
+      <div class="records-section card" role="region" aria-label="Case vault — recent reports">
+        <div class="records-header">
+          <h3 data-i18n="records_title">Case Vault</h3>
+          <button class="btn-sm btn-danger" id="clearDataBtn" aria-label="Clear all my locally saved data" data-i18n="btn_clear">
+            🗑 Clear My Data
+          </button>
+        </div>
+
+        <div class="records-empty" id="recordsEmpty" hidden>
+          <span aria-hidden="true">📂</span>
+          <p data-i18n="records_empty">No reports yet. Your submissions will appear here.</p>
+        </div>
+
+        <div class="records-table-wrap">
+          <table class="records-table" id="recordsTable" aria-label="Case vault records">
+            <thead>
+              <tr>
+                <th scope="col" data-i18n="col_location">Location</th>
+                <th scope="col" data-i18n="col_category">Category</th>
+                <th scope="col" data-i18n="col_authority">Authority</th>
+                <th scope="col" data-i18n="col_severity">Severity</th>
+                <th scope="col" data-i18n="col_type">Type</th>
+              </tr>
+            </thead>
+            <tbody id="recordsBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button class="btn-primary" onclick="goTo('home')" data-i18n="btn_new_report">+ New Report</button>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────────────────────
+         PAGE 4: ABOUT
+    ─────────────────────────────────────────── -->
+    <section id="page-about" class="page" aria-label="About AwaazSafe">
+
+      <div class="about-hero">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          <span data-i18n="about_badge">Student-built · Visakhapatnam · 2026</span>
+        </div>
+        <h2 data-i18n="about_headline">Why AwaazSafe Exists</h2>
+        <p class="about-pitch" data-i18n="about_pitch">
+          AwaazSafe is an anonymous voice-to-text reporting portal for Vizag students that bypasses biased college gatekeepers to route complaints straight to external authorities.
+        </p>
+      </div>
+
+      <div class="about-section card">
+        <h3 data-i18n="problem_title">The Problem</h3>
+        <p data-i18n="problem_desc">
+          Students in Visakhapatnam colleges facing online abuse and ragging lack a confidential reporting channel.
+          Fear of biased internal committees and institutional retaliation forces them into silence.
+          Existing portals require login, go through college admin first, or simply don't exist.
+        </p>
+      </div>
+
+      <div class="about-section card">
+        <h3 data-i18n="diff_title">What Makes Us Different</h3>
+        <ul class="diff-list">
+          <li data-i18n="diff1">🔒 <strong>Zero-knowledge anonymity</strong> — no account, no personal data, no server logs</li>
+          <li data-i18n="diff2">🎙️ <strong>Voice-to-text in Telugu & English</strong> — no typing required</li>
+          <li data-i18n="diff3">🏛️ <strong>Direct routing to external authorities</strong> — UGC, AP Police, NCW, Vizag Cyber Cell</li>
+          <li data-i18n="diff4">📱 <strong>Works on any phone browser</strong> — no app download needed</li>
+        </ul>
+      </div>
+
+      <div class="stat-cards" role="region" aria-label="National impact statistics">
+        <div class="stat-card">
+          <span class="stat-num">1.01L+</span>
+          <span class="stat-label" data-i18n="stat1">Cybercrime cases in India (NCRB 2024)</span>
+        </div>
+        <div class="stat-card stat-card--amber">
+          <span class="stat-num">45,519</span>
+          <span class="stat-label" data-i18n="stat2">SOS requests in Vizag alone</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-num">↑ #1</span>
+          <span class="stat-label" data-i18n="stat3">Cyber threats fastest-growing crime category</span>
+        </div>
+      </div>
+
+      <div class="about-section card">
+        <h3 data-i18n="how_title">How It Works</h3>
+        <ol class="how-list">
+          <li data-i18n="how1">Student presses mic, speaks the incident in Telugu or English</li>
+          <li data-i18n="how2">Gemini AI structures the speech into a formal legal complaint</li>
+          <li data-i18n="how3">Student reviews, removes identity markers, and optionally attaches evidence</li>
+          <li data-i18n="how4">Report is routed to the correct external authority — not the college admin</li>
+          <li data-i18n="how5">Student gets a 16-character encrypted case key to track the complaint</li>
+        </ol>
+      </div>
+
+      <div class="about-section card">
+        <h3 data-i18n="team_title">Our Team</h3>
+        <p class="team-intro" data-i18n="team_intro">A student team of 5 from Visakhapatnam, building safety tools for their peers.</p>
+        <div class="team-grid">
+          <div class="team-card">
+            <div class="team-avatar" aria-hidden="true">👩‍💻</div>
+            <div class="team-name" data-i18n="team1_name">Priya Sharma</div>
+            <div class="team-role" data-i18n="team1_role">Product & UX</div>
+          </div>
+          <div class="team-card">
+            <div class="team-avatar" aria-hidden="true">👨‍💻</div>
+            <div class="team-name" data-i18n="team2_name">Arjun Reddy</div>
+            <div class="team-role" data-i18n="team2_role">AI & Backend</div>
+          </div>
+          <div class="team-card">
+            <div class="team-avatar" aria-hidden="true">👩‍🎓</div>
+            <div class="team-name" data-i18n="team3_name">Kavitha Nair</div>
+            <div class="team-role" data-i18n="team3_role">Legal & Compliance</div>
+          </div>
+          <div class="team-card">
+            <div class="team-avatar" aria-hidden="true">👨‍🎓</div>
+            <div class="team-name" data-i18n="team4_name">Ravi Teja</div>
+            <div class="team-role" data-i18n="team4_role">Outreach & Ops</div>
+          </div>
+          <div class="team-card">
+            <div class="team-avatar" aria-hidden="true">👩‍💼</div>
+            <div class="team-name" data-i18n="team5_name">Swathi Devi</div>
+            <div class="team-role" data-i18n="team5_role">Research & Data</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="about-cta">
+        <button class="btn-primary btn-large" onclick="goTo('home')" data-i18n="cta_report">
+          🎙️ Report an Incident Now
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <div class="toast" id="globalToast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Clear-data confirmation modal -->
+  <div class="modal-overlay" id="confirmModal" hidden role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modal-box">
+      <h3 id="confirmTitle" data-i18n="confirm_title">Clear all data?</h3>
+      <p data-i18n="confirm_desc">This will permanently delete all locally saved reports and settings. This cannot be undone.</p>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="confirmCancel" data-i18n="confirm_cancel">Cancel</button>
+        <button class="btn-danger-full" id="confirmOk" data-i18n="confirm_ok">Yes, Clear All</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       FAKE / EDITED EVIDENCE WARNING MODAL
+       Shown when C2PA / AI-generation markers are detected.
+       Blocks submission and logs the event hash locally.
+  ════════════════════════════════════════════════════════ -->
+  <div class="modal-overlay fake-evidence-overlay" id="fakeEvidenceModal"
+       hidden role="alertdialog" aria-modal="true"
+       aria-labelledby="fakeEvidenceTitle" aria-describedby="fakeEvidenceDesc">
+    <div class="modal-box fake-evidence-box">
+
+      <!-- Warning icon header -->
+      <div class="fake-ev-header">
+        <span class="fake-ev-icon" aria-hidden="true">🚫</span>
+        <div>
+          <h3 id="fakeEvidenceTitle" class="fake-ev-title">
+            Submission Blocked — Altered Evidence Detected
+          </h3>
+          <p class="fake-ev-subtitle">
+            File: <strong id="fakeEvidenceFileName">unknown</strong>
+          </p>
+        </div>
+      </div>
+
+      <!-- Main message body -->
+      <div id="fakeEvidenceDesc" class="fake-ev-body">
+
+        <div class="fake-ev-alert">
+          <strong>What was detected:</strong>
+          <p id="fakeEvidenceDetails" class="fake-ev-details"></p>
+        </div>
+
+        <p class="fake-ev-para">
+          <strong>Submitting digitally altered, AI-generated, or fabricated evidence is a criminal offence</strong>
+          under <em>Section 65B of the Indian Evidence Act, 1872</em> (electronic record admissibility)
+          and <em>Section 191 / 192 IPC</em> (giving or fabricating false evidence).
+          Convictions can result in imprisonment of up to <strong>7 years</strong> and monetary fines.
+        </p>
+
+        <p class="fake-ev-para">
+          The following information has been <strong>logged locally</strong> and
+          will be included in any formal investigation referral:
+        </p>
+
+        <!-- Technical fingerprint box -->
+        <div class="fake-ev-fingerprint">
+          <div class="fingerprint-row">
+            <span class="fingerprint-label">File SHA-256</span>
+            <span class="fingerprint-value mono" id="fakeEvidenceHash">—</span>
+          </div>
+          <div class="fingerprint-row">
+            <span class="fingerprint-label">Session ID</span>
+            <span class="fingerprint-value mono" id="fakeEvidenceSession">—</span>
+          </div>
+          <div class="fingerprint-row">
+            <span class="fingerprint-label">Detection Time</span>
+            <span class="fingerprint-value" id="fakeEvidenceTime">—</span>
+          </div>
+          <div class="fingerprint-row">
+            <span class="fingerprint-label">Detected Tool(s)</span>
+            <span class="fingerprint-value" id="fakeEvidenceTools">—</span>
+          </div>
+        </div>
+
+        <div class="fake-ev-authority-notice">
+          <span class="authority-dot" aria-hidden="true"></span>
+          If this file was submitted as part of a malicious or false complaint,
+          this event log is eligible for referral to the
+          <strong>Vizag Cyber Crime Cell</strong> and
+          <strong>AP Cyber Security Bureau</strong>
+          under the IT Act, 2000 (Sections 66, 66C, 66D).
+        </div>
+
+      </div><!-- /fake-ev-body -->
+
+      <!-- Actions -->
+      <div class="modal-actions fake-ev-actions">
+        <button class="btn-secondary" id="fakeEvidenceRemove">
+          🗑 Remove This File
+        </button>
+        <button class="btn-danger-full" id="fakeEvidenceAcknowledge">
+          I Understand — Remove & Continue
+        </button>
+      </div>
+
+    </div><!-- /modal-box -->
+  </div><!-- /fakeEvidenceModal -->
+
+  <script src="security.js?v=2"></script>
+  <script src="app.js?v=2"></script>
+</body>
 </html>
